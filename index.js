@@ -1,6 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
@@ -10,7 +10,11 @@ const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors({
-    origin: ['http://localhost:5173'],
+    origin: [
+        // 'http://localhost:5173'
+        'https://cars-doctor-66bd5.web.app',
+        'https://cars-doctor-66bd5.firebaseapp.com'
+    ],
     credentials: true
 }));
 app.use(express.json());
@@ -46,7 +50,7 @@ const verifyToken = async (req, res, next) => {
     if (!token) {
         return res.status(401).send({ message: 'not authorized' })
     }
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         // error
         if (err) {
             return res.status(401).send({ message: ' unauthorized' })
@@ -76,9 +80,17 @@ async function run() {
             res
                 .cookie('token', token, {
                     httpOnly: true,
-                    secure: false
+                    secure: true,
+                    sameSite: 'none'
                 })
                 .send({ success: true })
+        })
+
+
+        app.post('/logout', async (req, res) => {
+            const user = req.body;
+            console.log('logging out ', user)
+            res.clearCookie('token', { maxAge: 0 }).send({ success: true })
         })
 
 
@@ -117,7 +129,7 @@ async function run() {
             console.log('user in the valid token', req.user);
 
             if (req.query.email !== req.user.email) {
-                return res.status(403).send({message: 'forbidden access'})
+                return res.status(403).send({ message: 'forbidden access' })
             }
 
             let query = {};
